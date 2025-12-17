@@ -10,7 +10,10 @@ import VoteCTA from './components/VoteCTA.jsx'
 
 const initialView = () => {
   if (typeof window === 'undefined') return 'home'
-  return window.location.hash.includes('account') ? 'account' : 'home'
+  const hash = window.location.hash.toLowerCase()
+  if (hash.includes('account')) return 'account'
+  if (hash.includes('vote')) return 'vote'
+  return 'home'
 }
 
 const RANGE_LABELS = {
@@ -51,15 +54,23 @@ function App() {
 
   useEffect(() => {
     const onHashChange = () => {
-      setView(window.location.hash.includes('account') ? 'account' : 'home')
+      setView(initialView())
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   function navigate(to) {
-    setView(to)
-    window.location.hash = to === 'account' ? '#/account' : '#/'
+    if (view !== to) {
+      setView(to)
+    }
+    if (to === 'account') {
+      window.location.hash = '#/account'
+    } else if (to === 'vote') {
+      window.location.hash = '#/vote'
+    } else {
+      window.location.hash = '#/'
+    }
   }
 
   return (
@@ -71,11 +82,29 @@ function App() {
             <span>Supply Pulse</span>
           </div>
           <nav className="nav-links" aria-label="Primary">
-            <button className={`nav-link${view === 'home' ? ' is-active' : ''}`} onClick={() => navigate('home')}>
+            <button
+              type="button"
+              className={`nav-link${view === 'home' ? ' is-active' : ''}`}
+              aria-current={view === 'home' ? 'page' : undefined}
+              onClick={() => navigate('home')}
+            >
               Dashboard
             </button>
-            <button className={`nav-link${view === 'account' ? ' is-active' : ''}`} onClick={() => navigate('account')}>
+            <button
+              type="button"
+              className={`nav-link${view === 'account' ? ' is-active' : ''}`}
+              aria-current={view === 'account' ? 'page' : undefined}
+              onClick={() => navigate('account')}
+            >
               Account
+            </button>
+            <button
+              type="button"
+              className={`nav-link${view === 'vote' ? ' is-active' : ''}`}
+              aria-current={view === 'vote' ? 'page' : undefined}
+              onClick={() => navigate('vote')}
+            >
+              Vote
             </button>
           </nav>
         </header>
@@ -86,7 +115,6 @@ function App() {
           <div className="hero-content">
             <div className="hero-meta">
               <span className="eyebrow">Supply pulse</span>
-              <span className="pill">Range • {RANGE_LABELS[range]}</span>
             </div>
             <div className="hero-headline">
               <h1>Warehouse and Retail Sales</h1>
@@ -144,7 +172,6 @@ function App() {
             )}
           </section>
 
-          {auth && user && <VoteCTA user={user} />}
         </>
         )}
 
@@ -177,6 +204,27 @@ function App() {
                   <button className="btn btn-ghost" onClick={() => navigate('home')}>Back to dashboard</button>
                 </div>
               </div>
+            )}
+          </section>
+        )}
+
+        {view === 'vote' && (
+          <section className="card stack-md vote-page">
+            <div className="stack-sm">
+              <p className="eyebrow">Vote</p>
+              <h1>Share your stance</h1>
+              <p className="lead">Accept or deny the policy once. After voting, you can see how the community is trending.</p>
+            </div>
+            {!auth ? (
+              <div className="stack-sm">
+                <h3>App not configured</h3>
+                <p className="error-text">{firebaseInitError || 'Firebase is not initialized.'}</p>
+                <p className="muted">
+                  Create a <code>.env.local</code> with your <code>VITE_FIREBASE_*</code> keys and restart <code>npm run dev</code>.
+                </p>
+              </div>
+            ) : (
+              <VoteCTA user={user} />
             )}
           </section>
         )}
